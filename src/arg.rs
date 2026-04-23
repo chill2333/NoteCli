@@ -1,7 +1,5 @@
 use std::path::PathBuf;
-
 use clap::{Parser,Subcommand,ValueEnum};
-
 #[derive(Parser)]
 #[command(version, about = "NoteCli - A lightweight CLI note manager")]
 struct Args {
