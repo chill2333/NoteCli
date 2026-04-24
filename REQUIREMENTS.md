@@ -142,7 +142,7 @@ NoteCli 是一个基于 Rust 开发的命令行备忘录管理工具。它以本
   ---
   id: "a1b2c3d4"
   title: "会议纪要"
-  category: "work/meetings"
+  category: ["work", "meeting"]
   tags: ["weekly", "project-alpha"]
   priority: "normal"
   created: "2024-01-15T14:30:00+08:00"

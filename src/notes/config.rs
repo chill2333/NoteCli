@@ -15,6 +15,17 @@ pub struct Config {
     pub search: SearchConfig,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            general: default_general(),
+            display: default_display(),
+            storage: default_storage(),
+            search: default_search(),
+        }
+    }
+}
+
 /// [general] 段
 #[derive(Debug, Deserialize)]
 pub struct GeneralConfig {

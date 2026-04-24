@@ -1,11 +1,10 @@
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct NoteModel {
-    pub id: String,
+#[derive(Debug, Serialize, Deserialize,Clone)]
+pub struct NoteIndexModel {
+    pub id: u32,
     pub title: String,
-    pub content: String,
     pub category: CategoryModel,
     pub tags: Vec<TagModel>,
     pub priority: Priority,
@@ -13,7 +12,13 @@ pub struct NoteModel {
     pub modified: DateTime<Local>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct NoteModel{
+    pub index: NoteIndexModel,
+    pub content: String,
+}
+
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum Priority {
     Low,
     Normal,
@@ -22,23 +27,25 @@ pub enum Priority {
 }
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct CategoryModel{
-    id:u32,
-    name:String,
-    parentid:u32,
+    pub id:u32,
+    pub name:String,
+    pub parentid:u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct TagModel{
-    id:u32,
-    name:String,
+    pub id:u32,
+    pub name:String,
 }
 
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct NoteStatus {
-    pub notes: Vec<NoteModel>,
-    pub pinned_notes: Vec<NoteModel>,
-    pub archived_notes: Vec<NoteModel>,
+    pub notes: Vec<NoteIndexModel>,
+    #[serde(default)]
+    pub pinned_notes_id: Vec<u32>,
+    #[serde(default)]
+    pub archived_notes: Vec<u32>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]

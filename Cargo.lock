@@ -10,6 +10,7 @@ dependencies = [
  "clap",
  "colored",
  "serde",
+ "serde_json",
  "tempfile",
  "toml",
 ]

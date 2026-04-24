@@ -12,8 +12,8 @@
   title_max_width = 50            # 列表中标题最大显示宽度
 
   [storage]
-  notes_dir = "~/.notecli/notes"  # 笔记存储目录
-  index_file = "~/.notecli/index.json"  # 索引文件路径
+  notes_dir = "./.notecli/notes"  # 笔记存储目录
+  index_file = "./.notecli/index.json"  # 索引文件路径
 
   [search]
   default_mode = "plain"          # 默认搜索模式

@@ -1,0 +1,96 @@
+{
+  "note_status": {
+    "notes": [
+      {
+        "id": 0,
+        "title": "Rust 学习笔记",
+        "category": {
+          "id": 1,
+          "name": "学习",
+          "parentid": 0
+        },
+        "tags": [
+          {
+            "id": 1,
+            "name": "rust"
+          },
+          {
+            "id": 2,
+            "name": "编程"
+          }
+        ],
+        "priority": "Normal",
+        "created": "2026-04-20T10:30:00+08:00",
+        "modified": "2026-04-22T14:20:00+08:00"
+      },
+      {
+        "id": 1,
+        "title": "项目会议纪要",
+        "category": {
+          "id": 2,
+          "name": "工作",
+          "parentid": 0
+        },
+        "tags": [
+          {
+            "id": 3,
+            "name": "会议"
+          }
+        ],
+        "priority": "High",
+        "created": "2026-04-21T09:00:00+08:00",
+        "modified": "2026-04-21T11:30:00+08:00"
+      },
+      {
+        "id": 2,
+        "title": "待办事项",
+        "category": {
+          "id": 3,
+          "name": "个人",
+          "parentid": 0
+        },
+        "tags": [],
+        "priority": "Urgent",
+        "created": "2026-04-24T08:00:00+08:00",
+        "modified": "2026-04-24T08:00:00+08:00"
+      }
+    ],
+    "pinned_notes_id": [],
+    "archived_notes": []
+  },
+  "category_status": {
+    "categories": [
+      {
+        "id": 1,
+        "name": "学习",
+        "parentid": 0
+      },
+      {
+        "id": 2,
+        "name": "工作",
+        "parentid": 0
+      },
+      {
+        "id": 3,
+        "name": "个人",
+        "parentid": 0
+      }
+    ]
+  },
+  "tag_status": {
+    "tags": [
+      {
+        "id": 1,
+        "name": "rust"
+      },
+      {
+        "id": 2,
+        "name": "编程"
+      },
+      {
+        "id": 3,
+        "name": "会议"
+      }
+    ]
+  }
+}
