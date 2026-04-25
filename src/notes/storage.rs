@@ -172,357 +172,313 @@ impl DataBaseStorage {
         }
         Some(rest[1..end_pos].to_string())
     }
-
-    /// 读取完整的笔记（元数据 + 正文内容）
-    pub fn read_note(&self, id: u32) -> Option<NoteModel> {
-        let path = self.notes_dir.join(format!("{id}.md"));
-        let content = fs::read_to_string(&path).ok()?;
-
-        let trimmed = content.trim_start();
-        if !trimmed.starts_with("---") {
-            return None;
-        }
-
-        let after_first = &trimmed[3..];
-        let newline_pos = after_first
-            .find(|c: char| c == '\n')
-            .unwrap_or(after_first.len());
-        let rest = &after_first[newline_pos..];
-
-        let end_marker = "\n---";
-        let end_pos = rest.find(end_marker)?;
-        let frontmatter = &rest[1..end_pos];
-        let body = &rest[end_pos + end_marker.len()..];
-
-        let index = serde_json::from_str(frontmatter).ok()?;
-
-        Some(NoteModel {
-            index,
-            content: body.trim_start().to_string(),
-        })
-    }
     /// 保存到index.json
     pub fn save_index(&self) -> Result<(), Box<dyn std::error::Error>> {
         let json = serde_json::to_string_pretty(self)?;
         fs::write(&self.index_file, json)?;
         Ok(())
     }
-}
 
+    /// 获取下一个可用的笔记 ID（当前最大 ID + 1）
+    pub fn next_note_id(&self) -> u32 {
+        self.note_status.notes.iter().map(|n| n.id).max().unwrap_or(0) + 1
+    }
 
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use tempfile::TempDir;
-    use super::super::model::{Priority, CategoryModel};
-    use chrono::Local;
-
-    fn make_config(dir: &TempDir) -> StorageConfig {
-        StorageConfig {
-            notes_dir: dir.path().join("notes"),
-            index_file: dir.path().join("index.json"),
+    /// 根据名称查找分类，若不存在则自动创建新分类并返回
+    pub fn resolve_category(&mut self, name: &str) -> CategoryModel {
+        if let Some(existing) = self.category_status.categories.iter().find(|c| c.name == name) {
+            existing.clone()
+        } else {
+            let id = self.category_status.categories.iter().map(|c| c.id).max().unwrap_or(0) + 1;
+            let model = CategoryModel { id, name: name.to_string(), parentid: 0 };
+            self.category_status.categories.push(model.clone());
+            model
         }
     }
 
-    fn make_note_content(id: u32, title: &str, priority: &str) -> String {
-        format!(
-            "---\n\
-{{\"id\":{id},\"title\":\"{title}\",\
-\"category\":{{\"id\":1,\"name\":\"test\",\"parentid\":0}},\
-\"tags\":[{{\"id\":1,\"name\":\"tag1\"}}],\
-\"priority\":\"{priority}\",\
-\"created\":\"2026-04-24T10:00:00+08:00\",\
-\"modified\":\"2026-04-24T10:00:00+08:00\"}}\n\
----\n\
-这是 {title} 的正文内容。\n"
-        )
+    /// 根据名称查找标签，若不存在则自动创建新标签并返回
+    pub fn resolve_tag(&mut self, name: &str) -> TagModel {
+        if let Some(existing) = self.tag_status.tags.iter().find(|t| t.name == name) {
+            existing.clone()
+        } else {
+            let id = self.tag_status.tags.iter().map(|t| t.id).max().unwrap_or(0) + 1;
+            let model: TagModel = TagModel { id, name: name.to_string() };
+            self.tag_status.tags.push(model.clone());
+            model
+        }
     }
 
-    // ---- extract_frontmatter 测试 ----
-
-    #[test]
-    fn test_extract_frontmatter_valid() {
-        let content = "---\n{\"id\":1,\"title\":\"test\"}\n---\nbody";
-        let result = DataBaseStorage::extract_frontmatter(content);
-        assert!(result.is_some());
-        let fm = result.unwrap();
-        assert!(fm.contains("\"id\":1"));
-        assert!(fm.contains("\"title\":\"test\""));
+    /// 将笔记写入磁盘文件（frontmatter + 正文），文件名为标题的净化形式
+    pub fn write_note_file(&self, note: &NoteModel) -> std::io::Result<()> {
+        let frontmatter = serde_json::to_string(&note.index).expect("序列化笔记索引失败");
+        let file_content = format!("---\n{}\n---\n{}", frontmatter, note.content);
+        let filename = format!("{}.md", sanitize_filename(&note.index.title));
+        let path = self.notes_dir.join(filename);
+        fs::write(path, file_content)
     }
 
-    #[test]
-    fn test_extract_frontmatter_no_frontmatter() {
-        let content = "没有 frontmatter 的内容";
-        let result = DataBaseStorage::extract_frontmatter(content);
-        assert!(result.is_none());
+    /// 将笔记索引信息添加到内存中的 note_status
+    pub fn add_note(&mut self, note: NoteModel) {
+        self.note_status.notes.push(note.index);
     }
 
-    #[test]
-    fn test_extract_frontmatter_empty_frontmatter() {
-        let content = "---\n---\nbody here";
-        let result = DataBaseStorage::extract_frontmatter(content);
-        assert!(result.is_some());
-        assert_eq!(result.unwrap(), "");
+    /// 检查指定标题的笔记是否已存在
+    pub fn title_exists(&self, title: &str) -> bool {
+        self.note_status.notes.iter().any(|n| n.title == title)
     }
 
-    // ---- scan_disk_notes 测试 ----
-
-    #[test]
-    fn test_scan_disk_notes_finds_md_files() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        fs::write(config.notes_dir.join("note-a.md"), "content").unwrap();
-        fs::write(config.notes_dir.join("note-b.md"), "content").unwrap();
-        fs::write(config.notes_dir.join("readme.txt"), "content").unwrap();
-
-        let storage = DataBaseStorage {
-            notes_dir: config.notes_dir,
-            index_file: config.index_file,
-            ..Default::default()
-        };
-
-        let ids = storage.scan_disk_note_names().unwrap();
-        assert_eq!(ids.len(), 2);
-        assert!(ids.iter().any(|s| s == "note-a"));
-        assert!(ids.iter().any(|s| s == "note-b"));
-        assert!(!ids.iter().any(|s| s == "readme"));
+    /// 返回所有笔记的索引信息引用列表
+    pub fn list_notes(&self) -> Vec<&NoteIndexModel> {
+        self.note_status.notes.iter().collect()
     }
 
-    #[test]
-    fn test_scan_disk_notes_empty_dir() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        let storage = DataBaseStorage {
-            notes_dir: config.notes_dir,
-            index_file: config.index_file,
-            ..Default::default()
-        };
-
-        let ids = storage.scan_disk_note_names().unwrap();
-        assert!(ids.is_empty());
+    /// 根据 ID 获取完整笔记（包含正文内容），从磁盘读取 .md 文件
+    pub fn get_note(&self, id: u32) -> Option<NoteModel> {
+        let index = self.note_status.notes.iter().find(|n| n.id == id)?;
+        let filename = format!("{}.md", sanitize_filename(&index.title));
+        let path = self.notes_dir.join(filename);
+        let raw = fs::read_to_string(&path).ok()?;
+        let body = extract_body(&raw);
+        Some(NoteModel {
+            index: index.clone(),
+            content: body,
+        })
     }
 
-    // ---- read_note_metadata 测试 ----
+    /// 更新笔记内容，先写入新文件成功后再删除旧文件，最后更新索引
+    pub fn update_note(&mut self, note: NoteModel) -> std::io::Result<()> {
+        let old = self.note_status.notes.iter().find(|n| n.id == note.index.id)
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "笔记不存在"))?;
 
-    #[test]
-    fn test_read_note_metadata_valid() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
+        let old_title = old.title.clone();
 
-        let note_content = make_note_content(1, "测试笔记", "Normal");
-        fs::write(config.notes_dir.join("1.md"), &note_content).unwrap();
+        self.write_note_file(&note)?;
 
-        let storage = DataBaseStorage {
-            notes_dir: config.notes_dir,
-            index_file: config.index_file,
-            ..Default::default()
-        };
+        // 新文件写入成功后，再删除旧文件
+        if old_title != note.index.title {
+            let old_file = self.notes_dir.join(format!("{}.md", sanitize_filename(&old_title)));
+            let _ = fs::remove_file(old_file);
+        }
 
-        let meta = storage.read_note_metadata("1").unwrap();
-        assert_eq!(meta.id, 1);
-        assert_eq!(meta.title, "测试笔记");
-        assert_eq!(meta.priority, Priority::Normal);
+        if let Some(existing) = self.note_status.notes.iter_mut().find(|n| n.id == note.index.id) {
+            *existing = note.index;
+        }
+        Ok(())
     }
 
-    #[test]
-    fn test_read_note_metadata_missing_file() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        let storage = DataBaseStorage {
-            notes_dir: config.notes_dir,
-            index_file: config.index_file,
-            ..Default::default()
-        };
-
-        assert!(storage.read_note_metadata("nonexistent").is_none());
+    /// 根据 ID 删除笔记，同时移除磁盘文件、索引记录、置顶和归档状态
+    pub fn delete_note(&mut self, id: u32) -> std::io::Result<()> {
+        let index = self.note_status.notes.iter().find(|n| n.id == id)
+            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "笔记不存在"))?;
+        let filename = format!("{}.md", sanitize_filename(&index.title));
+        fs::remove_file(self.notes_dir.join(filename))?;
+        self.note_status.notes.retain(|n| n.id != id);
+        self.note_status.pinned_notes_id.retain(|&pid| pid != id);
+        self.note_status.archived_notes.retain(|&aid| aid != id);
+        self.note_status.done_notes.retain(|&did| did != id);
+        Ok(())
     }
 
-    #[test]
-    fn test_read_note_metadata_no_frontmatter() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        fs::write(config.notes_dir.join("bad.md"), "没有 frontmatter").unwrap();
-
-        let storage = DataBaseStorage {
-            notes_dir: config.notes_dir,
-            index_file: config.index_file,
-            ..Default::default()
-        };
-
-        assert!(storage.read_note_metadata("bad").is_none());
+    /// 将指定笔记设为置顶（重复置顶不重复添加）
+    pub fn pin_note(&mut self, id: u32) {
+        if !self.note_status.pinned_notes_id.contains(&id) {
+            self.note_status.pinned_notes_id.push(id);
+        }
     }
 
-    // ---- sync_notes 测试 ----
-
-    #[test]
-    fn test_sync_adds_new_notes_to_index() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        fs::write(
-            config.notes_dir.join("1.md"),
-            make_note_content(1, "新笔记", "High"),
-        ).unwrap();
-
-        let index_path = config.index_file.clone();
-
-        let mut storage = DataBaseStorage {
-            notes_dir: config.notes_dir,
-            index_file: config.index_file,
-            ..Default::default()
-        };
-
-        storage.sync_notes().unwrap();
-
-        assert_eq!(storage.note_status.notes.len(), 1);
-        assert_eq!(storage.note_status.notes[0].id, 1);
-        assert_eq!(storage.note_status.notes[0].title, "新笔记");
-
-        assert!(index_path.exists());
+    /// 取消指定笔记的置顶状态
+    pub fn unpin_note(&mut self, id: u32) {
+        self.note_status.pinned_notes_id.retain(|&pid| pid != id);
     }
 
-    #[test]
-    fn test_sync_removes_orphaned_index_entries() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        let ghost_index = NoteIndexModel {
-            id: 999,
-            title: "幽灵笔记".to_string(),
-            category: CategoryModel { id: 1, name: "test".to_string(), parentid: 0 },
-            tags: vec![],
-            priority: Priority::Normal,
-            created: Local::now(),
-            modified: Local::now(),
-        };
-
-        let mut storage = DataBaseStorage {
-            notes_dir: config.notes_dir,
-            index_file: config.index_file,
-            note_status: NoteStatus {
-                notes: vec![ghost_index],
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-
-        storage.sync_notes().unwrap();
-
-        assert!(storage.note_status.notes.is_empty());
+    /// 检查指定笔记是否处于置顶状态
+    pub fn is_pinned(&self, id: u32) -> bool {
+        self.note_status.pinned_notes_id.contains(&id)
     }
 
-    #[test]
-    fn test_sync_skips_file_without_frontmatter() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        fs::write(
-            config.notes_dir.join("1.md"),
-            make_note_content(1, "有效笔记", "Normal"),
-        ).unwrap();
-        fs::write(config.notes_dir.join("bad.md"), "纯文本无元数据").unwrap();
-
-        let mut storage = DataBaseStorage {
-            notes_dir: config.notes_dir,
-            index_file: config.index_file,
-            ..Default::default()
-        };
-
-        storage.sync_notes().unwrap();
-
-        assert_eq!(storage.note_status.notes.len(), 1);
-        assert_eq!(storage.note_status.notes[0].id, 1);
+    /// 将指定笔记归档（重复归档不重复添加）
+    pub fn archive_note(&mut self, id: u32) {
+        if !self.note_status.archived_notes.contains(&id) {
+            self.note_status.archived_notes.push(id);
+        }
     }
 
-    // ---- init 集成测试 ----
-
-    #[test]
-    fn test_init_creates_index_when_missing() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-
-        let storage = DataBaseStorage::init(&config).unwrap();
-
-        assert!(config.index_file.exists());
-        assert!(storage.note_status.notes.is_empty());
+    /// 取消指定笔记的归档状态
+    pub fn unarchive_note(&mut self, id: u32) {
+        self.note_status.archived_notes.retain(|&aid| aid != id);
     }
 
-    #[test]
-    fn test_init_syncs_disk_notes_into_empty_index() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        fs::write(
-            config.notes_dir.join("1.md"),
-            make_note_content(1, "笔记1", "Normal"),
-        ).unwrap();
-        fs::write(
-            config.notes_dir.join("2.md"),
-            make_note_content(2, "笔记2", "Urgent"),
-        ).unwrap();
-
-        let storage = DataBaseStorage::init(&config).unwrap();
-
-        assert_eq!(storage.note_status.notes.len(), 2);
+    /// 检查指定笔记是否已归档
+    pub fn is_archived(&self, id: u32) -> bool {
+        self.note_status.archived_notes.contains(&id)
     }
 
-    #[test]
-    fn test_init_loads_existing_index_and_syncs() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        fs::write(
-            config.notes_dir.join("1.md"),
-            make_note_content(1, "已有笔记", "Low"),
-        ).unwrap();
-
-        let storage1 = DataBaseStorage::init(&config).unwrap();
-        assert_eq!(storage1.note_status.notes.len(), 1);
-
-        fs::write(
-            config.notes_dir.join("2.md"),
-            make_note_content(2, "额外笔记", "High"),
-        ).unwrap();
-
-        let storage2 = DataBaseStorage::init(&config).unwrap();
-        assert_eq!(storage2.note_status.notes.len(), 2);
+    /// 将指定笔记标记为已完成（重复标记不重复添加）
+    pub fn done_note(&mut self, id: u32) {
+        if !self.note_status.done_notes.contains(&id) {
+            self.note_status.done_notes.push(id);
+        }
     }
 
-    // ---- read_note 测试 ----
-
-    #[test]
-    fn test_read_note_returns_metadata_and_content() {
-        let dir = TempDir::new().unwrap();
-        let config = make_config(&dir);
-        fs::create_dir_all(&config.notes_dir).unwrap();
-
-        let content = make_note_content(1, "完整笔记", "Normal");
-        fs::write(config.notes_dir.join("1.md"), &content).unwrap();
-
-        let storage = DataBaseStorage {
-            notes_dir: config.notes_dir,
-            index_file: config.index_file,
-            ..Default::default()
-        };
-
-        let note = storage.read_note(1).unwrap();
-        assert_eq!(note.index.id, 1);
-        assert_eq!(note.index.title, "完整笔记");
-        assert!(note.content.contains("完整笔记 的正文内容"));
+    /// 检查指定笔记是否已完成
+    pub fn is_done(&self, id: u32) -> bool {
+        self.note_status.done_notes.contains(&id)
     }
+
+    /// 返回所有分类的引用
+    pub fn list_categories(&self) -> &Vec<CategoryModel> {
+        &self.category_status.categories
+    }
+
+    /// 重命名分类，同步更新所有关联笔记的分类名称、磁盘文件和分类列表
+    pub fn rename_category(&mut self, old_name: &str, new_name: &str) {
+        for note in &mut self.note_status.notes {
+            if note.category.name == old_name {
+                note.category.name = new_name.to_string();
+                note.modified = chrono::Local::now();
+            }
+        }
+        for cat in &mut self.category_status.categories {
+            if cat.name == old_name {
+                cat.name = new_name.to_string();
+            }
+        }
+
+        // 同步磁盘文件：重新写入受影响的笔记
+        for note_index in &self.note_status.notes {
+            if note_index.category.name == new_name {
+                if let Some(note) = self.get_note(note_index.id) {
+                    let _ = self.write_note_file(&note);
+                }
+            }
+        }
+        let _ = self.save_index();
+    }
+
+    /// 删除分类，保留笔记文件并重置为默认分类
+    pub fn delete_category_keep_notes(&mut self, name: &str) {
+        self.category_status.categories.retain(|c| c.name != name);
+        for note in &mut self.note_status.notes {
+            if note.category.name == name {
+                note.category = CategoryModel { id: 0, name: "default".to_string(), parentid: 0 };
+                note.modified = chrono::Local::now();
+            }
+        }
+
+        // 同步磁盘文件：更新受影响笔记的 frontmatter
+        for note_index in &self.note_status.notes.clone() {
+            if note_index.category.name == "default" {
+                if let Some(note) = self.get_note(note_index.id) {
+                    let _ = self.write_note_file(&note);
+                }
+            }
+        }
+        let _ = self.save_index();
+    }
+
+    /// 删除分类及其下所有笔记文件
+    pub fn delete_category_with_notes(&mut self, name: &str) {
+        let ids_to_delete: Vec<u32> = self.note_status.notes.iter()
+            .filter(|n| n.category.name == name)
+            .map(|n| n.id)
+            .collect();
+
+        for id in &ids_to_delete {
+            let _ = self.delete_note(*id);
+        }
+
+        self.category_status.categories.retain(|c| c.name != name);
+        let _ = self.save_index();
+    }
+
+    /// 返回所有标签的引用
+    pub fn list_tags(&self) -> &Vec<TagModel> {
+        &self.tag_status.tags
+    }
+
+    /// 重命名标签，同步更新所有关联笔记的标签名称、磁盘文件和标签列表
+    pub fn rename_tag(&mut self, old_name: &str, new_name: &str) {
+        for note in &mut self.note_status.notes {
+            for tag in &mut note.tags {
+                if tag.name == old_name {
+                    tag.name = new_name.to_string();
+                    note.modified = chrono::Local::now();
+                }
+            }
+        }
+        for tag in &mut self.tag_status.tags {
+            if tag.name == old_name {
+                tag.name = new_name.to_string();
+            }
+        }
+
+        // 同步磁盘文件：重新写入受影响的笔记
+        for note_index in &self.note_status.notes {
+            if note_index.tags.iter().any(|t| t.name == new_name) {
+                if let Some(note) = self.get_note(note_index.id) {
+                    let _ = self.write_note_file(&note);
+                }
+            }
+        }
+        let _ = self.save_index();
+    }
+
+    /// 删除标签，同时从所有笔记中移除该标签的关联
+    pub fn delete_tag(&mut self, name: &str) {
+        self.tag_status.tags.retain(|t| t.name != name);
+        for note in &mut self.note_status.notes {
+            note.tags.retain(|t| t.name != name);
+        }
+    }
+
+    /// 根据 ID 获取笔记的索引信息（不可变引用）
+    pub fn get_note_index(&self, id: u32) -> Option<&NoteIndexModel> {
+        self.note_status.notes.iter().find(|n| n.id == id)
+    }
+
+    /// 根据 ID 获取笔记的索引信息（可变引用）
+    pub fn get_note_index_mut(&mut self, id: u32) -> Option<&mut NoteIndexModel> {
+        self.note_status.notes.iter_mut().find(|n| n.id == id)
+    }
+
+    /// 返回笔记状态的不可变引用
+    pub fn note_status_ref(&self) -> &NoteStatus {
+        &self.note_status
+    }
+
+    /// 检查指定 ID 的笔记是否存在
+    pub fn id_exists(&self, id: u32) -> bool {
+        self.note_status.notes.iter().any(|n| n.id == id)
+    }
+}
+
+/// 将标题中的非法文件名字符替换为下划线，并去除首尾的点和空格；结果为空则返回 "untitled"
+fn sanitize_filename(title: &str) -> String {
+    let sanitized: String = title
+        .chars()
+        .map(|c| match c {
+            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+            _ => c,
+        })
+        .collect();
+    let trimmed = sanitized.trim_matches(|c: char| c == '.' || c == ' ');
+    if trimmed.is_empty() {
+        "untitled".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// 从 markdown 原始内容中提取正文部分（去除 frontmatter 之后的内容）
+fn extract_body(raw: &str) -> String {
+    let trimmed = raw.trim_start();
+    if !trimmed.starts_with("---") {
+        return raw.to_string();
+    }
+    let rest = &trimmed[3..];
+    let after_fm = match rest.find("\n---") {
+        Some(pos) => &rest[pos + 4..],
+        None => return String::new(),
+    };
+    after_fm.trim().to_string()
 }

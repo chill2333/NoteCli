@@ -46,6 +46,8 @@ pub struct NoteStatus {
     pub pinned_notes_id: Vec<u32>,
     #[serde(default)]
     pub archived_notes: Vec<u32>,
+    #[serde(default)]
+    pub done_notes: Vec<u32>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
