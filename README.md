@@ -221,7 +221,6 @@ default_category = "default"    # 新建笔记的默认分类
 [display]
 color = true                    # 启用彩色输出
 date_format = "%Y-%m-%d %H:%M"  # 日期显示格式
-table_style = "compact"         # 表格样式
 title_max_width = 50            # 标题最大显示宽度
 
 [storage]
@@ -234,12 +233,16 @@ case_sensitive = false          # 默认大小写敏感
 max_results = 50                # 最大搜索结果数
 
 [theme]
-title = "cyan bold"
-id = "yellow"
-tag = "green"
-category = "blue"
-priority_high = "yellow bold"
-priority_urgent = "red bold"
+title = "cyan bold"             # 标题样式
+id = "yellow"                   # ID 样式
+tag = "green"                   # 标签样式
+category = "blue"               # 分类样式
+date = "dark_gray"              # 日期样式
+separator = "dark_gray"         # 分隔线样式
+priority_low = "white"          # 低优先级样式
+priority_normal = "green"       # 普通优先级样式
+priority_high = "yellow bold"   # 高优先级样式
+priority_urgent = "red bold"    # 紧急优先级样式
 ```
 
 ## 项目结构
@@ -272,7 +275,7 @@ src/
         ├── archive.rs       # 归档/取消归档
         ├── done.rs          # 标记完成
         ├── config.rs        # 配置管理
-```
+        └── completion.rs    # Shell 补全
 
 ## 技术栈
 
@@ -529,7 +532,6 @@ default_category = "default"    # Default category for new notes
 [display]
 color = true                    # Enable colored output
 date_format = "%Y-%m-%d %H:%M"  # Date display format
-table_style = "compact"         # Table style
 title_max_width = 50            # Max display width for titles
 
 [storage]
@@ -542,12 +544,16 @@ case_sensitive = false          # Default case sensitivity
 max_results = 50                # Max search results
 
 [theme]
-title = "cyan bold"
-id = "yellow"
-tag = "green"
-category = "blue"
-priority_high = "yellow bold"
-priority_urgent = "red bold"
+title = "cyan bold"             # Title style
+id = "yellow"                   # ID style
+tag = "green"                   # Tag style
+category = "blue"               # Category style
+date = "dark_gray"              # Date style
+separator = "dark_gray"         # Separator style
+priority_low = "white"          # Low priority style
+priority_normal = "green"       # Normal priority style
+priority_high = "yellow bold"   # High priority style
+priority_urgent = "red bold"    # Urgent priority style
 ```
 
 ## Project Structure
@@ -580,6 +586,7 @@ src/
         ├── archive.rs       # Archive/unarchive
         ├── done.rs          # Mark done
         ├── config.rs        # Config management
+        └── completion.rs    # Shell completion
 ```
 
 ## Tech Stack

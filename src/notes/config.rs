@@ -56,8 +56,6 @@ pub struct DisplayConfig {
     pub color: bool,
     #[serde(default = "default_date_format")]
     pub date_format: String,
-    #[serde(default = "default_table_style")]
-    pub table_style: String,
     #[serde(default = "default_title_max_width")]
     pub title_max_width: usize,
 }
@@ -91,7 +89,6 @@ fn default_pager() -> String { "less".to_string() }
 
 fn default_color() -> bool { true }
 fn default_date_format() -> String { "%Y-%m-%d %H:%M".to_string() }
-fn default_table_style() -> String { "compact".to_string() }
 fn default_title_max_width() -> usize { 50 }
 
 fn default_notes_dir() -> PathBuf {
@@ -120,7 +117,6 @@ fn default_display() -> DisplayConfig {
     DisplayConfig {
         color: default_color(),
         date_format: default_date_format(),
-        table_style: default_table_style(),
         title_max_width: default_title_max_width(),
     }
 }
@@ -261,7 +257,6 @@ impl Config {
             "display" => match field {
                 "color" => Some(self.display.color.to_string()),
                 "date_format" => Some(self.display.date_format.clone()),
-                "table_style" => Some(self.display.table_style.clone()),
                 "title_max_width" => Some(self.display.title_max_width.to_string()),
                 _ => None,
             },
@@ -329,11 +324,6 @@ impl Config {
         match field {
             "color" => { self.display.color = value.parse::<bool>().map_err(|_| format!("'{}' 不是有效的布尔值", value))?; Ok(()) }
             "date_format" => { self.display.date_format = value.to_string(); Ok(()) }
-            "table_style" => {
-                Self::validate_choice(value, &["compact", "expanded", "markdown"])?;
-                self.display.table_style = value.to_string();
-                Ok(())
-            }
             "title_max_width" => { self.display.title_max_width = value.parse::<usize>().map_err(|_| format!("'{}' 不是有效的正整数", value))?; Ok(()) }
             _ => Err(format!("未知的配置项 'display.{}'", field)),
         }
@@ -400,7 +390,6 @@ impl Config {
         // display
         entries.push(("display.color", self.display.color.to_string()));
         entries.push(("display.date_format", self.display.date_format.clone()));
-        entries.push(("display.table_style", self.display.table_style.clone()));
         entries.push(("display.title_max_width", self.display.title_max_width.to_string()));
         // storage
         entries.push(("storage.notes_dir", self.storage.notes_dir.to_string_lossy().to_string()));
