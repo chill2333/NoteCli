@@ -18,29 +18,6 @@ pub enum Color {
     BrightWhite,
 }
 
-impl Color {
-    fn fg_code(self) -> &'static str {
-        match self {
-            Self::Black => "30",
-            Self::Red => "31",
-            Self::Green => "32",
-            Self::Yellow => "33",
-            Self::Blue => "34",
-            Self::Magenta => "35",
-            Self::Cyan => "36",
-            Self::White => "37",
-            Self::BrightBlack => "90",
-            Self::BrightRed => "91",
-            Self::BrightGreen => "92",
-            Self::BrightYellow => "93",
-            Self::BrightBlue => "94",
-            Self::BrightMagenta => "95",
-            Self::BrightCyan => "96",
-            Self::BrightWhite => "97",
-        }
-    }
-}
-
 #[derive(Debug, Clone, Default)]
 pub struct Style {
     pub fg: Option<Color>,
@@ -75,26 +52,6 @@ impl Style {
             }
         }
         style
-    }
-
-    fn apply(&self, text: &str, no_color: bool) -> String {
-        if no_color {
-            return text.to_string();
-        }
-        let mut codes: Vec<&str> = Vec::new();
-        if self.bold {
-            codes.push("1");
-        }
-        if self.underline {
-            codes.push("4");
-        }
-        if let Some(fg) = self.fg {
-            codes.push(fg.fg_code());
-        }
-        if codes.is_empty() {
-            return text.to_string();
-        }
-        format!("\x1b[{}m{}\x1b[0m", codes.join(";"), text)
     }
 }
 
@@ -147,45 +104,6 @@ impl Theme {
         }
     }
 
-    pub fn disable_color(&self) -> Self {
-        let mut t = self.clone();
-        t.no_color = true;
-        t
-    }
-
-    pub fn fmt_title(&self, text: &str) -> String {
-        self.title.apply(text, self.no_color)
-    }
-
-    pub fn fmt_id(&self, id: u32) -> String {
-        self.id.apply(&id.to_string(), self.no_color)
-    }
-
-    pub fn fmt_tag(&self, text: &str) -> String {
-        self.tag.apply(text, self.no_color)
-    }
-
-    pub fn fmt_category(&self, text: &str) -> String {
-        self.category.apply(text, self.no_color)
-    }
-
-    pub fn fmt_priority(&self, priority: &str) -> String {
-        let style = match priority {
-            "low" => &self.priority_low,
-            "high" => &self.priority_high,
-            "urgent" => &self.priority_urgent,
-            _ => &self.priority_normal,
-        };
-        style.apply(priority, self.no_color)
-    }
-
-    pub fn fmt_separator(&self, width: usize) -> String {
-        self.separator.apply(&"─".repeat(width), self.no_color)
-    }
-
-    pub fn fmt_date(&self, text: &str) -> String {
-        self.date.apply(text, self.no_color)
-    }
 }
 
 impl Clone for Theme {

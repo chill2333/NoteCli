@@ -2,6 +2,7 @@ use regex::Regex;
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;
 use super::super::input;
+use super::super::config::Config;
 
 pub fn handle(
     keyword: &Option<String>,
@@ -9,6 +10,7 @@ pub fn handle(
     case_sensitive: bool,
     storage: &DataBaseStorage,
     output: &Output,
+    config: &Config,
 ) {
     let keyword = match keyword {
         Some(k) if !k.trim().is_empty() => k.clone(),
@@ -18,7 +20,7 @@ pub fn handle(
         }
     };
 
-    let mode = mode.as_deref().unwrap_or("plain");
+    let mode = mode.as_deref().unwrap_or(&config.search.default_mode);
 
     let notes: Vec<_> = storage.list_notes().into_iter().filter(|n| {
         let mut read_content = String::new();
@@ -34,6 +36,9 @@ pub fn handle(
             _ => search_plain(&haystack, &keyword, case_sensitive),
         }
     }).collect();
+
+    let mut notes: Vec<_> = notes;
+    notes.truncate(config.search.max_results);
 
     if notes.is_empty() {
         output.empty(format!("未找到匹配 '{}' 的笔记", keyword));
@@ -52,7 +57,7 @@ pub fn handle(
             output.cell_title(&n.title),
             output.cell_category(&n.category.name),
             comfy_table::Cell::new(context),
-            output.cell_date(&n.modified.format("%Y-%m-%d %H:%M").to_string()),
+            output.cell_date(&n.modified.format(&config.display.date_format).to_string()),
         ]);
     }
 

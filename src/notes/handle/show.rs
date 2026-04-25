@@ -2,8 +2,9 @@ use colored::Colorize;
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;
 use super::super::input;
+use super::super::config::Config;
 
-pub fn handle(id: &Option<u32>, raw: bool, storage: &DataBaseStorage, output: &Output) {
+pub fn handle(id: &Option<u32>, raw: bool, storage: &DataBaseStorage, output: &Output, config: &Config) {
     let id = match id {
         Some(id) => *id,
         None => match input::prompt_note_id(storage) {
@@ -19,8 +20,8 @@ pub fn handle(id: &Option<u32>, raw: bool, storage: &DataBaseStorage, output: &O
                 output.line(format!("ID: {}", note.index.id));
                 output.line(format!("分类: {}", note.index.category.name));
                 output.line(format!("优先级: {:?}", note.index.priority));
-                output.line(format!("创建: {}", note.index.created.format("%Y-%m-%d %H:%M")));
-                output.line(format!("修改: {}", note.index.modified.format("%Y-%m-%d %H:%M")));
+                output.line(format!("创建: {}", note.index.created.format(&config.display.date_format)));
+                output.line(format!("修改: {}", note.index.modified.format(&config.display.date_format)));
                 if !note.index.tags.is_empty() {
                     let tags: Vec<&str> = note.index.tags.iter().map(|t| t.name.as_str()).collect();
                     output.line(format!("标签: {}", tags.join(", ")));
@@ -38,8 +39,8 @@ pub fn handle(id: &Option<u32>, raw: bool, storage: &DataBaseStorage, output: &O
             let cat = output.styled(&note.index.category.name, &theme.category);
             let pri = format!("{:?}", note.index.priority).to_lowercase();
             let pri = output.styled(&pri, output.priority_style(&pri));
-            let created = output.styled(&note.index.created.format("%Y-%m-%d %H:%M").to_string(), &theme.date);
-            let modified = output.styled(&note.index.modified.format("%Y-%m-%d %H:%M").to_string(), &theme.date);
+            let created = output.styled(&note.index.created.format(&config.display.date_format).to_string(), &theme.date);
+            let modified = output.styled(&note.index.modified.format(&config.display.date_format).to_string(), &theme.date);
 
             output.blank();
             output.line(format!("  {} {}\n", title, format!("[{}]", id_str)));

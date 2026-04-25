@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use std::fs;
 use chrono::Local;
-use dialoguer::Select; // keep for future use
 use super::super::model::{NoteModel, NoteIndexModel, Priority};
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;

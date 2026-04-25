@@ -28,13 +28,13 @@ impl DataBaseStorage {
             fs::create_dir_all(parent)?;
         }
         let mut storage = Self::load(config)?;
-        storage.sync_notes();
+        let _ = storage.sync_notes();
         Ok(storage)
     }
 
     //从config添加index.jon，加载index索引到内存
     pub fn load(config: &StorageConfig) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut storage = if config.index_file.exists() {
+        let storage = if config.index_file.exists() {
             let content = fs::read_to_string(&config.index_file)?;
             let mut s: Self = serde_json::from_str(&content)?;
             s.notes_dir = config.notes_dir.clone();
@@ -355,42 +355,6 @@ impl DataBaseStorage {
         let _ = self.save_index();
     }
 
-    /// 删除分类，保留笔记文件并重置为默认分类
-    pub fn delete_category_keep_notes(&mut self, name: &str) {
-        self.category_status.categories.retain(|c| c.name != name);
-        for note in &mut self.note_status.notes {
-            if note.category.name == name {
-                note.category = CategoryModel { id: 0, name: "default".to_string(), parentid: 0 };
-                note.modified = chrono::Local::now();
-            }
-        }
-
-        // 同步磁盘文件：更新受影响笔记的 frontmatter
-        for note_index in &self.note_status.notes.clone() {
-            if note_index.category.name == "default" {
-                if let Some(note) = self.get_note(note_index.id) {
-                    let _ = self.write_note_file(&note);
-                }
-            }
-        }
-        let _ = self.save_index();
-    }
-
-    /// 删除分类及其下所有笔记文件
-    pub fn delete_category_with_notes(&mut self, name: &str) {
-        let ids_to_delete: Vec<u32> = self.note_status.notes.iter()
-            .filter(|n| n.category.name == name)
-            .map(|n| n.id)
-            .collect();
-
-        for id in &ids_to_delete {
-            let _ = self.delete_note(*id);
-        }
-
-        self.category_status.categories.retain(|c| c.name != name);
-        let _ = self.save_index();
-    }
-
     /// 返回所有标签的引用
     pub fn list_tags(&self) -> &Vec<TagModel> {
         &self.tag_status.tags
@@ -423,23 +387,6 @@ impl DataBaseStorage {
         let _ = self.save_index();
     }
 
-    /// 删除标签，同时从所有笔记中移除该标签的关联
-    pub fn delete_tag(&mut self, name: &str) {
-        self.tag_status.tags.retain(|t| t.name != name);
-        for note in &mut self.note_status.notes {
-            note.tags.retain(|t| t.name != name);
-        }
-    }
-
-    /// 根据 ID 获取笔记的索引信息（不可变引用）
-    pub fn get_note_index(&self, id: u32) -> Option<&NoteIndexModel> {
-        self.note_status.notes.iter().find(|n| n.id == id)
-    }
-
-    /// 根据 ID 获取笔记的索引信息（可变引用）
-    pub fn get_note_index_mut(&mut self, id: u32) -> Option<&mut NoteIndexModel> {
-        self.note_status.notes.iter_mut().find(|n| n.id == id)
-    }
 
     /// 返回笔记状态的不可变引用
     pub fn note_status_ref(&self) -> &NoteStatus {

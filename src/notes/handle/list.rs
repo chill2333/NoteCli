@@ -2,6 +2,7 @@ use comfy_table::{Cell, Attribute};
 use super::super::storage::DataBaseStorage;
 use super::super::model::NoteIndexModel;
 use super::super::output::Output;
+use super::super::config::Config;
 
 pub fn handle(
     sort: &Option<String>,
@@ -15,6 +16,7 @@ pub fn handle(
     notag: bool,
     storage: &DataBaseStorage,
     output: &Output,
+    config: &Config,
 ) {
     let all_notes: Vec<&NoteIndexModel> = storage.list_notes();
 
@@ -56,14 +58,14 @@ pub fn handle(
     // 未归档笔记
     if !active.is_empty() {
         let sorted = sort_and_paginate(active, sort, skip, take, storage);
-        print_table(&sorted, "笔记", storage, output);
+        print_table(&sorted, "笔记", storage, output, config);
     }
 
     // 已归档笔记
     if !archived.is_empty() {
         output.blank();
         let sorted = sort_and_paginate(archived, sort, skip, take, storage);
-        print_table(&sorted, "已归档笔记", storage, output);
+        print_table(&sorted, "已归档笔记", storage, output, config);
     }
 }
 
@@ -106,7 +108,7 @@ fn sort_and_paginate<'a>(
     result
 }
 
-fn print_table(notes: &[&NoteIndexModel], title: &str, storage: &DataBaseStorage, output: &Output) {
+fn print_table(notes: &[&NoteIndexModel], title: &str, storage: &DataBaseStorage, output: &Output, config: &Config) {
     output.line(format!("{} ({} 条)", title, notes.len()));
 
     let mut table = output.create_table();
@@ -120,6 +122,13 @@ fn print_table(notes: &[&NoteIndexModel], title: &str, storage: &DataBaseStorage
 
         let pri_str = format!("{:?}", n.priority).to_lowercase();
 
+        let display_title = if n.title.chars().count() > config.display.title_max_width {
+            let truncated: String = n.title.chars().take(config.display.title_max_width).collect();
+            format!("{}…", truncated)
+        } else {
+            n.title.clone()
+        };
+
         let pinned = storage.is_pinned(n.id);
         let done = storage.is_done(n.id);
         let archived = storage.is_archived(n.id);
@@ -131,10 +140,10 @@ fn print_table(notes: &[&NoteIndexModel], title: &str, storage: &DataBaseStorage
 
         table.add_row(vec![
             output.cell_id(n.id),
-            output.cell_title(&n.title),
+            output.cell_title(&display_title),
             output.cell_category(&n.category.name),
             output.cell_priority(&pri_str),
-            output.cell_date(&n.modified.format("%Y-%m-%d %H:%M").to_string()),
+            output.cell_date(&n.modified.format(&config.display.date_format).to_string()),
             output.cell_tag(if tags.is_empty() { "-" } else { &tags }),
             Cell::new(status_text).add_attribute(Attribute::Dim),
         ]);

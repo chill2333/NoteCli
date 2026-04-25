@@ -2,9 +2,10 @@ use std::path::PathBuf;
 use clap::{Parser,Subcommand,ValueEnum};
 use crate::notes::storage::DataBaseStorage;
 use crate::notes::output::Output;
+use crate::notes::config::Config;
 use crate::notes::handle;
 #[derive(Parser)]
-#[command(version, about = "NoteCli - A lightweight CLI note manager")]
+#[command(name = "note", bin_name = "note", version, about = "NoteCli - A lightweight CLI note manager")]
 struct Args {
     #[command(subcommand)]
     commands:Option<NoteCommand>
@@ -170,12 +171,6 @@ enum NoteCommand{
     #[command(subcommand)]
     Config(ConfigCommand),
 
-    /// Generate shell completion script
-    Completion{
-        /// Target shell [bash, zsh, fish, powershell, elvish]
-        shell: Option<ShellType>,
-    },
-
     /// Pin a note to top of list
     Pin{
         /// Note ID to pin
@@ -290,17 +285,8 @@ enum ConfigCommand{
     },
 }
 
-#[derive(Debug, Clone, Copy,ValueEnum)]
-enum ShellType{
-    Bash,
-    Zsh,
-    Fish,
-    Powershell,
-    Elvish,
-}
 
-
-pub fn arg_setup(storage: &mut DataBaseStorage, output: &Output, config_path: &PathBuf){
+pub fn arg_setup(storage: &mut DataBaseStorage, output: &Output, config_path: &PathBuf, config: &Config){
     let cli: Args = Args::parse();
     match cli.commands {
         None => {
@@ -308,11 +294,11 @@ pub fn arg_setup(storage: &mut DataBaseStorage, output: &Output, config_path: &P
         }
         Some(NoteCommand::Add {content, title, category, tags, priority }) => {
             let p = priority.map(|p| format!("{:?}", p).to_lowercase());
-            handle::add::handle(&content, &title, &category, &tags, &p, storage, output);
+            handle::add::handle(&content, &title, &category, &tags, &p, storage, output, config);
         }
         Some(NoteCommand::Show { id, raw }) => {
             let id = id.and_then(|s| s.parse::<u32>().ok());
-            handle::show::handle(&id, raw, storage, output);
+            handle::show::handle(&id, raw, storage, output, config);
         }
         Some(NoteCommand::Edit { id, title, category, tags, priority, content, append }) => {
             let p = priority.map(|p| format!("{:?}", p).to_lowercase());
@@ -323,11 +309,12 @@ pub fn arg_setup(storage: &mut DataBaseStorage, output: &Output, config_path: &P
         }
         Some(NoteCommand::List { sort, limit, offset, category, tag, priority, date, hastag, notag }) => {
             let s = sort.map(|s| format!("{:?}", s).to_lowercase());
-            handle::list::handle(&s, &limit, &offset, &category, &tag, &priority, &date, hastag, notag, storage, output);
+            handle::list::handle(&s, &limit, &offset, &category, &tag, &priority, &date, hastag, notag, storage, output, config);
         }
         Some(NoteCommand::Search { keyword, mode, casesensitive }) => {
             let m = mode.map(|m| format!("{:?}", m).to_lowercase());
-            handle::search::handle(&keyword, &m, casesensitive, storage, output);
+            let cs = casesensitive || config.search.case_sensitive;
+            handle::search::handle(&keyword, &m, cs, storage, output, config);
         }
         Some(NoteCommand::Category(cmd)) => {
             match cmd {
@@ -386,10 +373,6 @@ pub fn arg_setup(storage: &mut DataBaseStorage, output: &Output, config_path: &P
                     handle::config::set(&key, &value, output, config_path);
                 }
             }
-        }
-        Some(NoteCommand::Completion { shell }) => {
-            let s = shell.map(|s| format!("{:?}", s).to_lowercase());
-            handle::completion::handle(&s, output);
         }
         Some(NoteCommand::Pin { id }) => {
             let id = id.as_ref().and_then(|s| s.parse::<u32>().ok());

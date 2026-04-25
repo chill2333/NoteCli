@@ -2,6 +2,7 @@ use super::super::model::{NoteModel, NoteIndexModel, Priority};
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;
 use super::super::input;
+use super::super::config::Config;
 use chrono::Local;
 
 pub fn handle(
@@ -12,6 +13,7 @@ pub fn handle(
     priority: &Option<String>,
     storage: &mut DataBaseStorage,
     output: &Output,
+    config: &Config,
 ) {
     let content = match content {
         Some(c) if !c.trim().is_empty() => c.clone(),
@@ -27,7 +29,7 @@ pub fn handle(
     });
     let note_title = resolve_duplicate_title(&base_title, storage);
     let id = storage.next_note_id();
-    let cat = storage.resolve_category(category.as_deref().unwrap_or("default"));
+    let cat = storage.resolve_category(category.as_deref().unwrap_or(&config.general.default_category));
     let tag_models: Vec<_> = tags
         .as_ref()
         .map(|t| t.iter().map(|name| storage.resolve_tag(name)).collect())
@@ -40,7 +42,7 @@ pub fn handle(
             title: note_title,
             category: cat,
             tags: tag_models,
-            priority: parse_priority(priority.as_deref().unwrap_or("normal")),
+            priority: parse_priority(priority.as_deref().unwrap_or(&config.general.default_priority)),
             created: now,
             modified: now,
         },

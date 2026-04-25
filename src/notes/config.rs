@@ -201,7 +201,7 @@ impl Config {
         
         let path = match fs::canonicalize(path_str) {
             Ok(abs_path) => {
-                println!("配置文件路径有效: {}", abs_path.display());
+                // println!("配置文件路径有效: {}", abs_path.display());
                 abs_path
             }
             Err(e) => {
@@ -212,7 +212,7 @@ impl Config {
 
         let content = match fs::read_to_string(&path) {
             Ok(data) => {
-                println!("成功读取配置文件: {}", path.display());
+                // println!("成功读取配置文件: {}", path.display());
                 data
             }
             Err(e) => {

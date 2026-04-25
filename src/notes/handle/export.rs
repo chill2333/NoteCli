@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 use std::fs;
-use chrono::Datelike;
 use dialoguer::{MultiSelect, Select};
 use super::super::model::NoteIndexModel;
 use super::super::storage::DataBaseStorage;

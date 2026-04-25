@@ -12,5 +12,5 @@ fn main() {
 
     let output = notes::output::Output::new(theme);
 
-    arg::arg_setup(&mut storage_init, &output, &config_path);
+    arg::arg_setup(&mut storage_init, &output, &config_path, &configdata);
 }
