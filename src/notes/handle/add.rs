@@ -22,7 +22,7 @@ pub fn handle(
     };
 
     let base_title = title.clone().unwrap_or_else(|| {
-        let chars: String = content.chars().take(20).collect();
+        let chars: String = content.chars().filter(|c| *c != '\n' && *c != '\r').take(20).collect();
         if chars.is_empty() { "未命名笔记".to_string() } else { chars }
     });
     let note_title = resolve_duplicate_title(&base_title, storage);
