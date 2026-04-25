@@ -1,10 +1,11 @@
 use super::super::model::{NoteModel, NoteIndexModel, Priority};
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;
+use super::super::input;
 use chrono::Local;
 
 pub fn handle(
-    content: &str,
+    content: &Option<String>,
     title: &Option<String>,
     category: &Option<String>,
     tags: &Option<Vec<String>>,
@@ -12,10 +13,13 @@ pub fn handle(
     storage: &mut DataBaseStorage,
     output: &Output,
 ) {
-    if content.trim().is_empty() {
-        output.error("笔记内容不能为空");
-        return;
-    }
+    let content = match content {
+        Some(c) if !c.trim().is_empty() => c.clone(),
+        _ => match input::prompt_content() {
+            Some(c) => c,
+            None => { output.error("已取消"); return; }
+        }
+    };
 
     let base_title = title.clone().unwrap_or_else(|| {
         let chars: String = content.chars().take(20).collect();

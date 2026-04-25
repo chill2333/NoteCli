@@ -1,14 +1,23 @@
 use regex::Regex;
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;
+use super::super::input;
 
 pub fn handle(
-    keyword: &str,
+    keyword: &Option<String>,
     mode: &Option<String>,
     case_sensitive: bool,
     storage: &DataBaseStorage,
     output: &Output,
 ) {
+    let keyword = match keyword {
+        Some(k) if !k.trim().is_empty() => k.clone(),
+        _ => match input::prompt_text("请输入搜索关键词") {
+            Some(k) => k,
+            None => { output.error("已取消"); return; }
+        }
+    };
+
     let mode = mode.as_deref().unwrap_or("plain");
 
     let notes: Vec<_> = storage.list_notes().into_iter().filter(|n| {
@@ -20,9 +29,9 @@ pub fn handle(
         let haystack = format!("{} {} {} {}", n.title, read_content, n.category.name, tag_names);
 
         match mode {
-            "regex" => search_regex(&haystack, keyword, case_sensitive, output),
-            "fuzzy" => search_fuzzy(&haystack, keyword, case_sensitive),
-            _ => search_plain(&haystack, keyword, case_sensitive),
+            "regex" => search_regex(&haystack, &keyword, case_sensitive, output),
+            "fuzzy" => search_fuzzy(&haystack, &keyword, case_sensitive),
+            _ => search_plain(&haystack, &keyword, case_sensitive),
         }
     }).collect();
 
@@ -36,7 +45,7 @@ pub fn handle(
 
     for n in &notes {
         let content = storage.get_note(n.id).map(|note| note.content).unwrap_or_default();
-        let context = highlight_match(&content, keyword, mode, case_sensitive);
+        let context = highlight_match(&content, &keyword, mode, case_sensitive);
 
         table.add_row(vec![
             output.cell_id(n.id),
@@ -91,7 +100,7 @@ fn search_fuzzy(haystack: &str, pattern: &str, case_sensitive: bool) -> bool {
 }
 
 fn highlight_match(content: &str, keyword: &str, mode: &str, case_sensitive: bool) -> String {
-    let max_len = 40;
+    let max_chars = 40;
     let text = content.lines().next().unwrap_or("");
     if text.is_empty() {
         return "-".to_string();
@@ -100,27 +109,34 @@ fn highlight_match(content: &str, keyword: &str, mode: &str, case_sensitive: boo
     let lower_text = if case_sensitive { text.to_lowercase() } else { text.to_lowercase() };
     let lower_kw = if case_sensitive { keyword.to_lowercase() } else { keyword.to_lowercase() };
 
-    let pos = match mode {
+    let char_pos = match mode {
         "regex" => {
             let re = Regex::new(&format!("(?i){}", keyword)).ok();
-            re.and_then(|r| r.find(lower_text.as_str())).map(|m| m.start())
+            re.and_then(|r| r.find(lower_text.as_str()))
+                .map(|m| lower_text[..m.start()].chars().count())
         }
-        "fuzzy" => lower_text.find(lower_kw.chars().next().unwrap_or('\0')),
-        _ => lower_text.find(&lower_kw),
+        "fuzzy" => lower_text.find(lower_kw.chars().next().unwrap_or('\0'))
+            .map(|p| lower_text[..p].chars().count()),
+        _ => lower_text.find(&lower_kw)
+            .map(|p| lower_text[..p].chars().count()),
     };
 
-    let snippet = match pos {
-        Some(p) if p > 15 => format!("…{}…", &text[p.saturating_sub(5)..(p + keyword.len() + 20).min(text.len())]),
+    let snippet = match char_pos {
+        Some(p) if p > 15 => {
+            let start = p.saturating_sub(5);
+            let end = (p + lower_kw.chars().count() + 20).min(text.chars().count());
+            format!("…{}…", text.chars().skip(start).take(end - start).collect::<String>())
+        }
         Some(_) => {
-            if text.len() > max_len {
-                format!("{}…", &text[..max_len])
+            if text.chars().count() > max_chars {
+                format!("{}…", text.chars().take(max_chars).collect::<String>())
             } else {
                 text.to_string()
             }
         }
         None => {
-            if text.len() > max_len {
-                format!("{}…", &text[..max_len])
+            if text.chars().count() > max_chars {
+                format!("{}…", text.chars().take(max_chars).collect::<String>())
             } else {
                 text.to_string()
             }

@@ -13,3 +13,4 @@ pub mod pin;
 pub mod archive;
 pub mod done;
 pub mod config;
+pub mod completion;

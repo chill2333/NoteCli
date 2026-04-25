@@ -1,5 +1,7 @@
+use dialoguer::Select;
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;
+use super::super::input;
 
 pub fn list(storage: &DataBaseStorage, output: &Output) {
     let tags = storage.list_tags();
@@ -24,52 +26,47 @@ pub fn list(storage: &DataBaseStorage, output: &Output) {
 }
 
 pub fn rename(old_name: &Option<String>, new_name: &Option<String>, storage: &mut DataBaseStorage, output: &Output) {
+    let tags = storage.list_tags();
+    if tags.is_empty() {
+        output.empty("没有标签");
+        return;
+    }
+
+    let tag_names: Vec<&str> = tags.iter().map(|t| t.name.as_str()).collect();
+
     let old = match old_name {
-        Some(n) => n,
+        Some(n) => n.clone(),
         None => {
-            output.error("请指定当前标签名称");
-            return;
-        }
-    };
-    let new = match new_name {
-        Some(n) => n,
-        None => {
-            output.error("请指定新标签名称");
-            return;
+            let selection = match Select::new()
+                .with_prompt("选择要重命名的标签")
+                .items(&tag_names)
+                .interact()
+            {
+                Ok(s) => s,
+                Err(_) => { output.error("已取消"); return; }
+            };
+            tag_names[selection].to_string()
         }
     };
 
-    if !storage.list_tags().iter().any(|t| t.name == *old) {
+    if !tag_names.contains(&old.as_str()) {
         output.error(format!("标签 '{}' 不存在", old));
         return;
     }
 
-    storage.rename_tag(old, new);
+    let new = match new_name {
+        Some(n) => n.clone(),
+        None => match input::prompt_text(&format!("新名称 (当前: {})", old)) {
+            Some(n) => n,
+            None => { output.error("已取消"); return; }
+        }
+    };
+
+    storage.rename_tag(&old, &new);
     if let Err(e) = storage.save_index() {
         output.error(format!("保存索引失败 - {}", e));
         return;
     }
 
     output.success(format!("标签 '{}' 已重命名为 '{}'", old, new));
-}
-
-pub fn delete(name: &str, force: bool, storage: &mut DataBaseStorage, output: &Output) {
-    if !storage.list_tags().iter().any(|t| t.name == name) {
-        output.error(format!("标签 '{}' 不存在", name));
-        return;
-    }
-
-    if !force {
-        let count = storage.list_notes().iter().filter(|n| n.tags.iter().any(|t| t.name == name)).count();
-        output.info(format!("标签 '{}' 被 {} 条笔记使用，使用 -f 确认删除", name, count));
-        return;
-    }
-
-    storage.delete_tag(name);
-    if let Err(e) = storage.save_index() {
-        output.error(format!("保存索引失败 - {}", e));
-        return;
-    }
-
-    output.success(format!("标签 '{}' 已删除", name));
 }

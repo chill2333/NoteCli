@@ -2,308 +2,293 @@
   "note_status": {
     "notes": [
       {
-        "id": 1,
-        "title": "未命名笔记",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T20:01:38.019259500+08:00",
-        "modified": "2026-04-24T20:01:38.019259500+08:00"
-      },
-      {
-        "id": 2,
-        "title": "未命名笔记 (2)",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T21:01:16.488820700+08:00",
-        "modified": "2026-04-24T21:01:16.488820700+08:00"
-      },
-      {
         "id": 3,
-        "title": "未命名笔记 (3)",
+        "title": "这个是标题",
         "category": {
-          "id": 1,
-          "name": "default",
+          "id": 2,
+          "name": "工作",
           "parentid": 0
         },
-        "tags": [],
+        "tags": [
+          {
+            "id": 1,
+            "name": "测试tag"
+          },
+          {
+            "id": 2,
+            "name": "测试2tag"
+          },
+          {
+            "id": 3,
+            "name": "测试3"
+          }
+        ],
         "priority": "Normal",
-        "created": "2026-04-24T21:01:27.732481+08:00",
-        "modified": "2026-04-24T21:01:27.732481+08:00"
+        "created": "2026-04-25T18:13:38.854739900+08:00",
+        "modified": "2026-04-25T18:49:16.410355900+08:00"
       },
       {
         "id": 4,
-        "title": "未命名笔记 (4)",
+        "title": "不知道标题的名字#2323",
         "category": {
-          "id": 1,
-          "name": "default",
+          "id": 2,
+          "name": "工作",
+          "parentid": 0
+        },
+        "tags": [
+          {
+            "id": 1,
+            "name": "测试tag"
+          },
+          {
+            "id": 2,
+            "name": "测试2tag"
+          },
+          {
+            "id": 3,
+            "name": "测试3"
+          }
+        ],
+        "priority": "High",
+        "created": "2026-04-25T18:14:58.949305800+08:00",
+        "modified": "2026-04-25T18:17:00.256089200+08:00"
+      },
+      {
+        "id": 8,
+        "title": "标题mon3ter",
+        "category": {
+          "id": 3,
+          "name": "周一",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:52:23.777924500+08:00",
-        "modified": "2026-04-24T23:52:23.777924500+08:00"
+        "created": "2026-04-25T18:39:45.123807300+08:00",
+        "modified": "2026-04-25T19:21:30.088323600+08:00"
       },
       {
-        "id": 5,
-        "title": "tm的淦",
+        "id": 9,
+        "title": "没有标题",
         "category": {
-          "id": 1,
+          "id": 5,
+          "name": "111",
+          "parentid": 0
+        },
+        "tags": [
+          {
+            "id": 1,
+            "name": "测试tag"
+          },
+          {
+            "id": 2,
+            "name": "测试2tag"
+          }
+        ],
+        "priority": "Normal",
+        "created": "2026-04-25T19:20:25.361251400+08:00",
+        "modified": "2026-04-25T20:37:46.212909200+08:00"
+      },
+      {
+        "id": 11,
+        "title": "内容标题",
+        "category": {
+          "id": 2,
+          "name": "工作",
+          "parentid": 0
+        },
+        "tags": [],
+        "priority": "Normal",
+        "created": "2026-04-25T19:53:49.464722900+08:00",
+        "modified": "2026-04-25T20:34:16.495912200+08:00"
+      },
+      {
+        "id": 12,
+        "title": "一个好标题",
+        "category": {
+          "id": 2,
+          "name": "工作",
+          "parentid": 0
+        },
+        "tags": [],
+        "priority": "Normal",
+        "created": "2026-04-25T19:54:09.740654200+08:00",
+        "modified": "2026-04-25T20:25:27.122082400+08:00"
+      },
+      {
+        "id": 13,
+        "title": "use dialoguer::{Sele (2)",
+        "category": {
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [
           {
             "id": 1,
-            "name": "吐槽"
+            "name": "测试tag"
           }
         ],
         "priority": "Normal",
-        "created": "2026-04-24T23:53:13.444566500+08:00",
-        "modified": "2026-04-24T23:53:13.444566500+08:00"
-      },
-      {
-        "id": 6,
-        "title": "未命名笔记 (5)",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T23:58:08.125737300+08:00",
-        "modified": "2026-04-24T23:58:08.125737300+08:00"
-      },
-      {
-        "id": 7,
-        "title": "未命名笔记 (6)",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T23:58:18.451835900+08:00",
-        "modified": "2026-04-24T23:58:18.451835900+08:00"
-      },
-      {
-        "id": 8,
-        "title": "未命名笔记 (7)",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T23:58:18.853599900+08:00",
-        "modified": "2026-04-24T23:58:18.853599900+08:00"
-      },
-      {
-        "id": 9,
-        "title": "未命名笔记 (8)",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T23:58:19.223686100+08:00",
-        "modified": "2026-04-24T23:58:19.223686100+08:00"
-      },
-      {
-        "id": 10,
-        "title": "未命名笔记 (9)",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T23:58:19.561716500+08:00",
-        "modified": "2026-04-24T23:58:19.561716500+08:00"
-      },
-      {
-        "id": 11,
-        "title": "未命名笔记 (10)",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T23:58:19.915081300+08:00",
-        "modified": "2026-04-24T23:58:19.915081300+08:00"
-      },
-      {
-        "id": 12,
-        "title": "未命名笔记 (11)",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T23:58:20.261080400+08:00",
-        "modified": "2026-04-24T23:58:20.261080400+08:00"
-      },
-      {
-        "id": 13,
-        "title": "未命名笔记 (12)",
-        "category": {
-          "id": 1,
-          "name": "default",
-          "parentid": 0
-        },
-        "tags": [],
-        "priority": "Normal",
-        "created": "2026-04-24T23:58:20.614342500+08:00",
-        "modified": "2026-04-24T23:58:20.614342500+08:00"
+        "created": "2026-04-25T19:58:49.540982800+08:00",
+        "modified": "2026-04-25T20:34:52.807423700+08:00"
       },
       {
         "id": 14,
-        "title": "未命名笔记 (13)",
+        "title": "一个标题测试",
         "category": {
-          "id": 1,
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:58:20.963762200+08:00",
-        "modified": "2026-04-24T23:58:20.963762200+08:00"
+        "created": "2026-04-25T20:03:42.206876300+08:00",
+        "modified": "2026-04-25T20:33:29.743982500+08:00"
       },
       {
         "id": 15,
-        "title": "未命名笔记 (14)",
+        "title": "小红书爆款文案学习笔记",
         "category": {
-          "id": 1,
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:58:21.286727600+08:00",
-        "modified": "2026-04-24T23:58:21.286727600+08:00"
+        "created": "2026-04-25T21:19:40.108619600+08:00",
+        "modified": "2026-04-25T21:19:40.108619600+08:00"
       },
       {
         "id": 16,
-        "title": "未命名笔记 (15)",
+        "title": "一、爆款标题的核心公式",
         "category": {
-          "id": 1,
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:58:21.644578300+08:00",
-        "modified": "2026-04-24T23:58:21.644578300+08:00"
+        "created": "2026-04-25T21:19:40.108960400+08:00",
+        "modified": "2026-04-25T21:19:40.108960400+08:00"
       },
       {
         "id": 17,
-        "title": "未命名笔记 (16)",
+        "title": "二、爆款钩子开头公式",
         "category": {
-          "id": 1,
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:58:21.974894300+08:00",
-        "modified": "2026-04-24T23:58:21.974894300+08:00"
+        "created": "2026-04-25T21:19:40.109122500+08:00",
+        "modified": "2026-04-25T21:19:40.109122500+08:00"
       },
       {
         "id": 18,
-        "title": "未命名笔记 (17)",
+        "title": "三、17个经典文案句式（可直接套用）",
         "category": {
-          "id": 1,
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:58:22.292102300+08:00",
-        "modified": "2026-04-24T23:58:22.292102300+08:00"
+        "created": "2026-04-25T21:19:40.109266100+08:00",
+        "modified": "2026-04-25T21:19:40.109266100+08:00"
       },
       {
         "id": 19,
-        "title": "未命名笔记 (18)",
+        "title": "四、爆款万能词汇库",
         "category": {
-          "id": 1,
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:58:22.626286200+08:00",
-        "modified": "2026-04-24T23:58:22.626286200+08:00"
+        "created": "2026-04-25T21:19:40.109428300+08:00",
+        "modified": "2026-04-25T21:19:40.109428300+08:00"
       },
       {
         "id": 20,
-        "title": "未命名笔记 (19)",
+        "title": "五、写作技巧20条（提升文笔）",
         "category": {
-          "id": 1,
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:58:22.990549200+08:00",
-        "modified": "2026-04-24T23:58:22.990549200+08:00"
+        "created": "2026-04-25T21:19:40.109634200+08:00",
+        "modified": "2026-04-25T21:19:40.109634200+08:00"
+      },
+      {
+        "id": 21,
+        "title": "六、爆款标题万能模板",
+        "category": {
+          "id": 4,
+          "name": "default",
+          "parentid": 0
+        },
+        "tags": [],
+        "priority": "Normal",
+        "created": "2026-04-25T21:19:40.109829200+08:00",
+        "modified": "2026-04-25T21:19:40.109829200+08:00"
       },
       {
         "id": 22,
-        "title": "未命名笔记 (21)",
+        "title": "七、总结：爆款文案的底层逻辑",
         "category": {
-          "id": 1,
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:58:23.658387600+08:00",
-        "modified": "2026-04-24T23:58:23.658387600+08:00"
+        "created": "2026-04-25T21:19:40.109984700+08:00",
+        "modified": "2026-04-25T21:19:40.109984700+08:00"
       },
       {
         "id": 23,
-        "title": "未命名笔记 (22)",
+        "title": "八、参考来源",
         "category": {
-          "id": 1,
+          "id": 4,
           "name": "default",
           "parentid": 0
         },
         "tags": [],
         "priority": "Normal",
-        "created": "2026-04-24T23:58:23.980089200+08:00",
-        "modified": "2026-04-24T23:58:23.980089200+08:00"
+        "created": "2026-04-25T21:19:40.110112700+08:00",
+        "modified": "2026-04-25T21:19:40.110112700+08:00"
       }
     ],
-    "pinned_notes_id": [
-      4,
-      8
+    "pinned_notes_id": [],
+    "archived_notes": [
+      3
     ],
-    "archived_notes": []
+    "done_notes": []
   },
   "category_status": {
     "categories": [
       {
-        "id": 1,
+        "id": 2,
+        "name": "工作",
+        "parentid": 0
+      },
+      {
+        "id": 3,
+        "name": "周一",
+        "parentid": 0
+      },
+      {
+        "id": 4,
         "name": "default",
+        "parentid": 0
+      },
+      {
+        "id": 5,
+        "name": "111",
         "parentid": 0
       }
     ]
@@ -312,7 +297,15 @@
     "tags": [
       {
         "id": 1,
-        "name": "吐槽"
+        "name": "测试tag"
+      },
+      {
+        "id": 2,
+        "name": "测试2tag"
+      },
+      {
+        "id": 3,
+        "name": "测试3"
       }
     ]
   }

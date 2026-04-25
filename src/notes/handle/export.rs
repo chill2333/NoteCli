@@ -1,12 +1,13 @@
 use std::path::PathBuf;
 use std::fs;
 use chrono::Datelike;
+use dialoguer::{MultiSelect, Select};
 use super::super::model::NoteIndexModel;
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;
 
 pub fn handle(
-    format: &str,
+    format: &Option<String>,
     path: &Option<PathBuf>,
     id: &Option<Vec<String>>,
     all: bool,
@@ -18,15 +19,32 @@ pub fn handle(
 ) {
     let notes = collect_notes(id, all, category, tag, date, storage, output);
     if notes.is_empty() {
+        output.warn("没有找到匹配的笔记");
         return;
     }
 
-    let dir = match path {
-        None => PathBuf::from("export"),
-        Some(p) => p.clone(),
+    let format = match format {
+        Some(f) => f.clone(),
+        None => {
+            let formats = ["json", "markdown", "txt", "csv"];
+            let sel = match Select::new()
+                .with_prompt(format!("选择导出格式 (共 {} 条笔记)", notes.len()))
+                .items(&formats)
+                .interact()
+            {
+                Ok(s) => s,
+                Err(_) => { output.error("已取消"); return; }
+            };
+            formats[sel].to_string()
+        }
     };
 
-    match format {
+    let dir = match path {
+        Some(p) => p.clone(),
+        None => PathBuf::from("export"),
+    };
+
+    match format.as_str() {
         "txt" => export_txt(&notes, &dir, output),
         "markdown" => export_markdown(&notes, &dir, output),
         "json" => export_json(&notes, &dir, output),
@@ -53,17 +71,38 @@ fn collect_notes(
 ) -> Vec<ExportNote> {
     let indexes = storage.list_notes();
 
-    if id.is_none() && !all && category.is_none() && tag.is_none() && date.is_none() {
-        output.warn("未指定筛选条件，请使用 --all 导出全部，或用 --id/--category/--tag/--date 筛选");
-        return Vec::new();
-    }
+    // 无筛选条件时交互选择
+    let selected_ids: Option<Vec<u32>> = if id.is_none() && !all && category.is_none() && tag.is_none() && date.is_none() {
+        let items: Vec<String> = indexes.iter()
+            .map(|n| format!("[{}] {} ({})", n.id, n.title, n.category.name))
+            .collect();
+        if items.is_empty() {
+            return Vec::new();
+        }
+        let defaults: Vec<bool> = vec![false; items.len()];
+        let selections = match MultiSelect::new()
+            .with_prompt("选择要导出的笔记（空格切换，回车确认）")
+            .items(&items)
+            .defaults(&defaults)
+            .interact()
+        {
+            Ok(s) => s,
+            Err(_) => return Vec::new(),
+        };
+        if selections.is_empty() {
+            return Vec::new();
+        }
+        Some(selections.into_iter().map(|i| indexes[i].id).collect())
+    } else {
+        None
+    };
 
     let mut result = Vec::new();
     for idx in indexes {
-        if let Some(ids) = id {
-            if !ids.contains(&idx.id.to_string()) {
-                continue;
-            }
+        if let Some(ref ids) = selected_ids {
+            if !ids.contains(&idx.id) { continue; }
+        } else if let Some(ids) = id {
+            if !ids.contains(&idx.id.to_string()) { continue; }
         }
         if let Some(cat) = category {
             if idx.category.name != *cat { continue; }

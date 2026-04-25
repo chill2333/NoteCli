@@ -1,13 +1,14 @@
 use colored::Colorize;
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;
+use super::super::input;
 
 pub fn handle(id: &Option<u32>, raw: bool, storage: &DataBaseStorage, output: &Output) {
     let id = match id {
         Some(id) => *id,
-        None => {
-            output.error("请指定笔记ID");
-            return;
+        None => match input::prompt_note_id(storage) {
+            Some(id) => id,
+            None => { output.error("已取消"); return; }
         }
     };
 

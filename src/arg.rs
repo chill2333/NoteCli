@@ -14,7 +14,8 @@ struct Args {
 enum NoteCommand{
     /// Create a new note
     Add{
-        content:String,
+        /// Note content
+        content: Option<String>,
         /// Note title
         #[arg(short = 't',long = "title")]
         title:Option<String>,
@@ -39,7 +40,7 @@ enum NoteCommand{
     /// Edit an existing note
     Edit{
         /// Note ID to edit
-        id:u32,
+        id: Option<u32>,
         /// New title
         #[arg(short = 't',long = "title")]
         title:Option<String>,
@@ -59,25 +60,19 @@ enum NoteCommand{
         #[arg(short = 'a',long = "append")]
         append:Option<String>,
     },
-    /// Delete a note by ID
+    /// Delete notes by ID, tag, or category
     Delete{
         /// Note ID to delete
-        id:u32,
-        /// New title
-        #[arg(short = 't',long = "title")]
-        title:Option<String>,
-        /// New category
-        #[arg(short = 'c',long = "category")]
-        category:Option<String>,
-        /// New tags (replaces existing)
-        #[arg(short = 'T',long = "tags", num_args = 1..=20)]
-        tags:Option<Vec<String>>,
-        /// New priority level
-        #[arg(short = 'p',long = "priority")]
-        priority:Option<Priority>,
+        id: Option<u32>,
+        /// Delete all notes with this tag (can specify multiple)
+        #[arg(short = 'T', long = "tag", num_args = 1..=20)]
+        tag: Option<Vec<String>>,
+        /// Delete all notes in this category
+        #[arg(short = 'c', long = "category")]
+        category: Option<String>,
         /// Skip confirmation prompt
-        #[arg(short = 'f',long = "force")]
-        force:bool,
+        #[arg(short = 'f', long = "force")]
+        force: bool,
     },
     /// List all notes with optional filters
     List{
@@ -112,7 +107,7 @@ enum NoteCommand{
     /// Search notes by keyword
     Search{
         /// Search keyword
-        keyword: String,
+        keyword: Option<String>,
         /// Search mode [plain, regex, fuzzy]
         #[arg(short = 'm',long = "mode")]
         mode:Option<SearchMode>,
@@ -131,7 +126,7 @@ enum NoteCommand{
     Export{
         /// Export format [json, markdown, txt, csv]
         #[arg(short = 'f',long = "format")]
-        format: ExportFormat,
+        format: Option<ExportFormat>,
         /// Output file or directory path (default: current directory)
         #[arg(short = 'p',long = "path")]
         path: Option<PathBuf>,
@@ -155,7 +150,7 @@ enum NoteCommand{
     /// Import notes from file
     Import{
         /// Input file path (supports .json, .md, .txt)
-        path: PathBuf,
+        path: Option<PathBuf>,
         /// Default category for imported notes
         #[arg(short = 'c',long = "category")]
         category: Option<String>,
@@ -178,37 +173,37 @@ enum NoteCommand{
     /// Generate shell completion script
     Completion{
         /// Target shell [bash, zsh, fish, powershell, elvish]
-        shell: ShellType,
+        shell: Option<ShellType>,
     },
 
     /// Pin a note to top of list
     Pin{
         /// Note ID to pin
-        id: String,
+        id: Option<String>,
     },
 
     /// Unpin a note
     Unpin{
         /// Note ID to unpin
-        id: String,
+        id: Option<String>,
     },
 
     /// Archive a note (hide from default list)
     Archive{
         /// Note ID to archive
-        id: String,
+        id: Option<String>,
     },
 
     /// Unarchive a note
     Unarchive{
         /// Note ID to unarchive
-        id: String,
+        id: Option<String>,
     },
 
     /// Mark a note as done
     Done{
         /// Note ID to mark as done
-        id: String,
+        id: Option<String>,
     },
 }
 
@@ -225,17 +220,6 @@ enum CategoryCommand{
         /// New category name
         new_name:Option<String>
     },
-    /// Delete a category
-    Delete{
-        /// Category name to delete
-        name: String,
-        /// Skip confirmation prompt
-        #[arg(short = 'f',long = "force")]
-        force:bool,
-        /// Keep note files but remove their category association
-        #[arg(short = 'k',long = "keep")]
-        keep:bool,
-    }
 }
 #[derive(Subcommand)]
 enum TagCommand{
@@ -248,14 +232,6 @@ enum TagCommand{
         /// New tag name
         new_name:Option<String>
     },
-    /// Delete a tag
-    Delete{
-        /// Tag name to delete
-        name: String,
-        /// Skip confirmation prompt
-        #[arg(short = 'f',long = "force")]
-        force:bool,
-    }
 }
 
 
@@ -303,14 +279,14 @@ enum ConfigCommand{
     /// Get a specific config value by key
     Get{
         /// Config key name
-        key: String,
+        key: Option<String>,
     },
     /// Set a config value
     Set{
         /// Config key name
-        key: String,
+        key: Option<String>,
         /// Config value
-        value: String,
+        value: Option<String>,
     },
 }
 
@@ -335,20 +311,15 @@ pub fn arg_setup(storage: &mut DataBaseStorage, output: &Output, config_path: &P
             handle::add::handle(&content, &title, &category, &tags, &p, storage, output);
         }
         Some(NoteCommand::Show { id, raw }) => {
-            match id {
-                Some(id_str) => match id_str.parse::<u32>() {
-                    Ok(id) => handle::show::handle(&Some(id), raw, storage, output),
-                    Err(_) => output.error(format!("无效的笔记ID: '{}'", id_str)),
-                },
-                None => handle::show::handle(&None, raw, storage, output),
-            }
+            let id = id.and_then(|s| s.parse::<u32>().ok());
+            handle::show::handle(&id, raw, storage, output);
         }
         Some(NoteCommand::Edit { id, title, category, tags, priority, content, append }) => {
             let p = priority.map(|p| format!("{:?}", p).to_lowercase());
             handle::edit::handle(id, &title, &category, &tags, &p, &content, &append, storage, output);
         }
-        Some(NoteCommand::Delete { id, force, .. }) => {
-            handle::delete::handle(id, force, storage, output);
+        Some(NoteCommand::Delete { id, tag, category, force }) => {
+            handle::delete::handle(id, &tag, &category, force, storage, output);
         }
         Some(NoteCommand::List { sort, limit, offset, category, tag, priority, date, hastag, notag }) => {
             let s = sort.map(|s| format!("{:?}", s).to_lowercase());
@@ -369,9 +340,6 @@ pub fn arg_setup(storage: &mut DataBaseStorage, output: &Output, config_path: &P
                 CategoryCommand::Rename { old_name, new_name } => {
                     handle::category::rename(&old_name, &new_name, storage, output);
                 }
-                CategoryCommand::Delete { name, force, keep } => {
-                    handle::category::delete(&name, force, keep, storage, output);
-                }
             }
         }
         Some(NoteCommand::Tag(cmd)) => {
@@ -382,19 +350,16 @@ pub fn arg_setup(storage: &mut DataBaseStorage, output: &Output, config_path: &P
                 TagCommand::Rename { old_name, new_name } => {
                     handle::tag::rename(&old_name, &new_name, storage, output);
                 }
-                TagCommand::Delete { name, force } => {
-                    handle::tag::delete(&name, force, storage, output);
-                }
             }
         }
         Some(NoteCommand::Export { format, path, id, all, category, tag, date }) => {
-            let f = match format {
+            let f = format.map(|f| match f {
                 ExportFormat::Json => "json",
                 ExportFormat::Markdown => "markdown",
                 ExportFormat::Txt => "txt",
                 ExportFormat::Csv => "csv",
-            };
-            handle::export::handle(f, &path, &id, all, &category, &tag, &date, storage, output);
+            }.to_string());
+            handle::export::handle(&f, &path, &id, all, &category, &tag, &date, storage, output);
         }
         Some(NoteCommand::Import { path, category, tags }) => {
             handle::import::handle(&path, &category, &tags, storage, output);
@@ -423,38 +388,28 @@ pub fn arg_setup(storage: &mut DataBaseStorage, output: &Output, config_path: &P
             }
         }
         Some(NoteCommand::Completion { shell }) => {
-            println!("命令: Completion");
-            println!("  shell: {:?}", shell);
+            let s = shell.map(|s| format!("{:?}", s).to_lowercase());
+            handle::completion::handle(&s, output);
         }
         Some(NoteCommand::Pin { id }) => {
-            match id.parse::<u32>() {
-                Ok(id) => handle::pin::pin(id, storage, output),
-                Err(_) => output.error(format!("无效的笔记ID: '{}'", id)),
-            }
+            let id = id.as_ref().and_then(|s| s.parse::<u32>().ok());
+            handle::pin::pin(id, storage, output);
         }
         Some(NoteCommand::Unpin { id }) => {
-            match id.parse::<u32>() {
-                Ok(id) => handle::pin::unpin(id, storage, output),
-                Err(_) => output.error(format!("无效的笔记ID: '{}'", id)),
-            }
+            let id = id.as_ref().and_then(|s| s.parse::<u32>().ok());
+            handle::pin::unpin(id, storage, output);
         }
         Some(NoteCommand::Archive { id }) => {
-            match id.parse::<u32>() {
-                Ok(id) => handle::archive::archive(id, storage, output),
-                Err(_) => output.error(format!("无效的笔记ID: '{}'", id)),
-            }
+            let id = id.as_ref().and_then(|s| s.parse::<u32>().ok());
+            handle::archive::archive(id, storage, output);
         }
         Some(NoteCommand::Unarchive { id }) => {
-            match id.parse::<u32>() {
-                Ok(id) => handle::archive::unarchive(id, storage, output),
-                Err(_) => output.error(format!("无效的笔记ID: '{}'", id)),
-            }
+            let id = id.as_ref().and_then(|s| s.parse::<u32>().ok());
+            handle::archive::unarchive(id, storage, output);
         }
         Some(NoteCommand::Done { id }) => {
-            match id.parse::<u32>() {
-                Ok(id) => handle::done::handle(id, storage, output),
-                Err(_) => output.error(format!("无效的笔记ID: '{}'", id)),
-            }
+            let id = id.as_ref().and_then(|s| s.parse::<u32>().ok());
+            handle::done::handle(id, storage, output);
         }
     }
 }

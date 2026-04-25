@@ -1,7 +1,16 @@
 use super::super::storage::DataBaseStorage;
 use super::super::output::Output;
+use super::super::input;
 
-pub fn pin(id: u32, storage: &mut DataBaseStorage, output: &Output) {
+pub fn pin(id: Option<u32>, storage: &mut DataBaseStorage, output: &Output) {
+    let id = match id {
+        Some(id) => id,
+        None => match input::prompt_note_id(storage) {
+            Some(id) => id,
+            None => { output.error("已取消"); return; }
+        }
+    };
+
     if !storage.id_exists(id) {
         output.error(format!("笔记ID {} 不存在", id));
         return;
@@ -18,7 +27,15 @@ pub fn pin(id: u32, storage: &mut DataBaseStorage, output: &Output) {
     output.success(format!("笔记 {} 已置顶", id));
 }
 
-pub fn unpin(id: u32, storage: &mut DataBaseStorage, output: &Output) {
+pub fn unpin(id: Option<u32>, storage: &mut DataBaseStorage, output: &Output) {
+    let id = match id {
+        Some(id) => id,
+        None => match input::prompt_note_id(storage) {
+            Some(id) => id,
+            None => { output.error("已取消"); return; }
+        }
+    };
+
     if !storage.id_exists(id) {
         output.error(format!("笔记ID {} 不存在", id));
         return;
